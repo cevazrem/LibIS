@@ -3,35 +3,31 @@ import java.net.Socket;
 
 public class Client {
 
-    private static Socket clientSocket; //сокет для общения
-    private static BufferedReader reader; // нам нужен ридер читающий с консоли, иначе как
-    // мы узнаем что хочет сказать клиент?
-    private static BufferedReader in; // поток чтения из сокета
-    private static BufferedWriter out; // поток записи в сокет
+    private static Socket clientSocket; // client socket
+    private static BufferedReader reader; // console reader
+    private static BufferedReader in; // in pipe
+    private static BufferedWriter out; // out pipe
 
     public static void main(String[] args) {
         try {
             try {
-                // адрес - локальный хост, порт - 4004, такой же как у сервера
-                clientSocket = new Socket("localhost", 4004); // этой строкой мы запрашиваем
-                //  у сервера доступ на соединение
-                reader = new BufferedReader(new InputStreamReader(System.in));
-                // читать соообщения с сервера
+                clientSocket = new Socket("localhost", 4004); // port local 4004
+                reader = new BufferedReader(new InputStreamReader(System.in)); // console input
                 in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                // писать туда же
                 out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
 
                 System.out.println("Listen:");
-                // если соединение произошло и потоки успешно созданы - мы можем
-                //  работать дальше и предложить клиенту что то ввести
-                // если нет - вылетит исключение
-                String word = reader.readLine(); // ждём пока клиент что-нибудь
-                // не напишет в консоль
-                out.write(word + "\n"); // отправляем сообщение на сервер
-                out.flush();
-                String serverWord = in.readLine(); // ждём, что скажет сервер
-                System.out.println(serverWord); // получив - выводим на экран
-            } finally { // в любом случае необходимо закрыть сокет и потоки
+                String word;
+                String serverWord;
+                do {
+                    word = reader.readLine();
+                    System.out.println(word);
+                    out.write(word + "\n");
+                    out.flush();
+                    serverWord = in.readLine(); 
+                    System.out.println(serverWord);
+                } while (!word.equals("stop") && word != null);
+            } finally { // close socket
                 System.out.println("Client closed...");
                 clientSocket.close();
                 in.close();

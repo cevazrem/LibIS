@@ -4,35 +4,30 @@ import java.net.Socket;
 
 public class Server {
 
-    private static Socket clientSocket; //сокет для общения
-    private static ServerSocket server; // серверсокет
-    private static BufferedReader in; // поток чтения из сокета
-    private static BufferedWriter out; // поток записи в сокет
+    private static Socket clientSocket; //conv socket
+    private static ServerSocket server; // server socket
+    private static BufferedReader in; // read pipe
+    private static BufferedWriter out; // write pipe
 
     public static void main(String[] args) {
         try {
             try  {
-                server = new ServerSocket(4004); // серверсокет прослушивает порт 4004
-                System.out.println("Server ready"); // хорошо бы серверу
-                //   объявить о своем запуске
-                clientSocket = server.accept(); // accept() будет ждать пока
-                //кто-нибудь не захочет подключиться
-                try { // установив связь и воссоздав сокет для общения с клиентом можно перейти
-                    // к созданию потоков ввода/вывода.
-                    // теперь мы можем принимать сообщения
-                    in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    // и отправлять
-                    out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+                server = new ServerSocket(4004); // port 4004
+                System.out.println("Server ready");
 
-                    String word = in.readLine(); // ждём пока клиент что-нибудь нам напишет
-                    System.out.println(word);
-                    // не долго думая отвечает клиенту
-                    out.write("Recieved message : " + word + "\n");
-                    out.flush(); // выталкиваем все из буфера
-
-                } finally { // в любом случае сокет будет закрыт
+                clientSocket = server.accept(); // accept() wait for client connection
+                try { 
+                    in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())); // in canal
+                    out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream())); // out canal
+                    String word = in.readLine();
+                    while (!word.equals("stop") && word != null) {
+                        System.out.println(word);
+                        out.write("Recieved message :" + word + "\n");
+                        out.flush(); // pop buffer
+                        word = in.readLine();
+                    }
+                } finally { // close socket
                     clientSocket.close();
-                    // потоки тоже хорошо бы закрыть
                     in.close();
                     out.close();
                 }
