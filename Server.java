@@ -1,36 +1,3 @@
-/*
-
-public class Client {
-    private static final String url = "jdbc:mysql://localhost:3306/LIB";
-    private static final String user = "root";
-    private static final String password = "1234";
-
-    private static Connection con;
-    private static Statement stmt;
-    private static ResultSet rs;
-
-    public static void main(String[] args) {
-        String query = "select id from Books";
-        try {
-            con = DriverManager.getConnection(url, user, password);
-            stmt = con.createStatement();
-            rs = stmt.executeQuery(query);
-            while (rs.next()) {
-                int id = rs.getInt(1);
-                System.out.printf("id: %d ", id);
-            }
-        } catch (SQLException sqlEx) {
-            sqlEx.printStackTrace();
-        } finally {
-            //close connection ,stmt and resultset here
-            try { con.close(); } catch(SQLException se) { can't do anything  }
-            try { stmt.close(); } catch(SQLException se) { can't do anything  }
-            try { rs.close(); } catch(SQLException se) { can't do anything  }
-        }
-    }
-}
-*/
-
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
