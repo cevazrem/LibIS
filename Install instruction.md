@@ -27,3 +27,5 @@ https://dev.mysql.com/downloads/windows/installer/8.0.html
 
 Возвращаемся в нашу IDE, заходим во вкладку SDKs нажимаем на плюсик и добавляем ранее найденный файл JDBC
 ![image](https://user-images.githubusercontent.com/71120846/153251399-546e6904-db07-4b0d-868b-3953ff2f5c43.png)
+
+После чего, наша IDE будет настроена для работы с базой данных MYSQL в данном проекте!
