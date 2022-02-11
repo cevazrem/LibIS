@@ -2,10 +2,8 @@ import java.io.*;
 import java.net.Socket;
 import javax.swing.*;
 import javax.swing.table.*;
-import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.GridLayout;
 import java.awt.Color;
 
 //main class
@@ -110,7 +108,7 @@ public class Client {
             tmp = data;
             int size_n = (tmp.length() - tmp.replace("\":\"", "").length()) / 3 / size_m;
             //System.out.println(size_n);
-            String value = "";
+            StringBuilder value = new StringBuilder();
             String[][] result = new String[size_m][size_n] ;
             int col_pos = 0;
             int row_pos = 0;
@@ -118,11 +116,11 @@ public class Client {
             for (int i = 0; i < data.length(); i++) {
                 if (chars[i] == '\"' && chars[i - 1] == ':') {
                     while (chars[i + 1] != '\"') {
-                        value = value + chars[i + 1];
+                        value.append(chars[i + 1]);
                         i++;
                     }
-                    result[row_pos][col_pos] = value;
-                    value = "";
+                    result[row_pos][col_pos] = value.toString();
+                    value = new StringBuilder();
                     col_pos++;
                 }
                 if (chars[i] == ',' && chars[i - 1] == '}') {
@@ -134,203 +132,325 @@ public class Client {
         }
 
         //Action after push button Clients
-        public void DrawClients() {
-            String word;
-            socket.send_message("DrawClient");
-            word = socket.recieve_message();
+        private class DrawClients implements ActionListener{
+            DrawClients() {
+                socket.send_message("DrawClient");
+                String word = socket.recieve_message();
 
-            String data[][] = ParsJSON(word);
+                String[] col = {"Id", "FIO", "Birth_date", "Reg_date", "End_date", "Phone"};
+                String[][] data = ParsJSON(word);
 
-            String col[] = {"Id","FIO","Birth_date","Reg_date","End_date","Phone"};
+                JFrame frame = new JFrame("Clients");
+                JPanel panel = new JPanel();
+                JTable table = new JTable(data, col);
+                JTableHeader header = table.getTableHeader();
+                header.setBackground(Color.yellow);
+                JScrollPane pane = new JScrollPane(table);
+                table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+                panel.add(pane);
+                frame.add(panel);
+                //frame.setLocationRelativeTo(parent);
 
-            JFrame frame = new JFrame("Clients");
-            JPanel panel = new JPanel();
-            JTable table = new JTable(data,col);
-            JTableHeader header = table.getTableHeader();
-            header.setBackground(Color.yellow);
-            JScrollPane pane = new JScrollPane(table);
-            table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-            panel.add(pane);
-            frame.add(panel);
+                table.getColumnModel().getColumn(0).setWidth(20);
+                table.getColumnModel().getColumn(1).setWidth(150);
+                table.getColumnModel().getColumn(2).setWidth(50);
+                table.getColumnModel().getColumn(3).setWidth(50);
+                table.getColumnModel().getColumn(4).setWidth(80);
 
-            table.getColumnModel().getColumn( 0 ).setWidth( 20 );
-            table.getColumnModel().getColumn( 1 ).setWidth( 150 );
-            table.getColumnModel().getColumn( 2 ).setWidth( 50 );
-            table.getColumnModel().getColumn( 3 ).setWidth( 50 );
-            table.getColumnModel().getColumn( 4 ).setWidth( 80 );
-
-            frame.setSize(500, 500);
-            frame.setUndecorated(true);
-            frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
-            frame.setVisible(true);
+                frame.setSize(500, 500);
+                frame.setUndecorated(true);
+                frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
+                frame.setVisible(true);
+            }
+            public void actionPerformed(ActionEvent ae) {
+            }
         }
-
         //Action after push button Tickets
-        public void DrawTickets() {
-            String word;
-            socket.send_message("DrawTickets");
-            word = socket.recieve_message();
+        private class DrawTickets implements ActionListener {
+            private final JFrame            frame;
+            private final JPanel            panel;
+            private final JTable            table;
+            private final JTableHeader      header;
+            private final JButton           refresh_tick;
+            private final JButton           delete_tick;
+            private final DefaultTableModel tableModel;
+            private JDialog                 dialog;
+            private JTextField              text;
+            private JLabel                  label;
+            private String[] get_col() {
+                String[] col = {"Id", "Client", "Date_Start", "Date_end"};
+                return col;
+            }
 
-            String data[][] = ParsJSON(word);
+            private String[][] get_data(String word) {
+                return ParsJSON(word);
+            }
 
-            String col[] = {"Id","Date_Start","Date_end", "Client"};
+            DrawTickets() {
+                socket.send_message("DrawTickets");
+                String word = socket.recieve_message();
 
-            JFrame frame = new JFrame("Tickets");
-            JPanel panel = new JPanel();
-            JTable table = new JTable(data,col);
-            JTableHeader header = table.getTableHeader();
-            header.setBackground(Color.yellow);
-            JScrollPane pane = new JScrollPane(table);
-            table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-            panel.add(pane);
-            frame.add(panel);
+                String[] col = get_col();
+                String[][] data = get_data(word);
 
-            table.getColumnModel().getColumn( 0 ).setWidth( 20 );
-            table.getColumnModel().getColumn( 1 ).setWidth( 50 );
-            table.getColumnModel().getColumn( 2 ).setWidth( 50 );
-            table.getColumnModel().getColumn( 3 ).setWidth( 20 );
+                frame = new JFrame("Tickets");
+                frame.setLayout(new FlowLayout());
+                panel = new JPanel();
+                tableModel = new DefaultTableModel(data, col);
+                table = new JTable(tableModel);
 
-            frame.setSize(500, 500);
-            frame.setUndecorated(true);
-            frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
-            frame.setVisible(true);
+                header = table.getTableHeader();
+                refresh_tick = new JButton("refresh");
+                refresh_tick.addActionListener(this);
+                delete_tick = new JButton("close");
+                delete_tick.addActionListener(this);
+                header.setBackground(Color.yellow);
+                JScrollPane pane = new JScrollPane(table);
+                table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+                panel.add(pane);
+                frame.add(panel);
+                frame.add(refresh_tick);
+                frame.add(delete_tick);
+
+                table.getColumnModel().getColumn(0).setWidth(20);
+                table.getColumnModel().getColumn(1).setWidth(20);
+                table.getColumnModel().getColumn(2).setWidth(50);
+                table.getColumnModel().getColumn(3).setWidth(50);
+
+                frame.setSize(500, 500);
+                frame.setUndecorated(true);
+                frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
+                frame.setVisible(true);
+            }
+            private void refresh_ticket() {
+                socket.send_message("RefreshTickets");
+                String word = socket.recieve_message();
+
+                String[] col = get_col();
+                String[][] data = get_data(word);
+
+                tableModel.setRowCount(0);
+                for (int i = 0; i < data.length; i++) {
+                    tableModel.addRow(data[i]);
+                }
+                tableModel.fireTableDataChanged();
+            }
+            private void close_form() {
+                dialog = new JDialog(frame);
+                dialog.setSize(200, 200);
+                JPanel p = new JPanel();
+                label = new JLabel("Enter id:");
+                text = new JTextField(16);
+                JButton enter = new JButton("ok");
+                enter.setActionCommand("close_ok");
+                enter.addActionListener(this);
+                dialog.setAlwaysOnTop(true);
+                p.add(label);
+                p.add(text);
+                p.add(enter);
+                dialog.add(p);
+                dialog.setVisible(true);
+                //socket.send_message("DeleteRow");
+            }
+            private void close_ticket() {
+                int id;
+                boolean is_real = false;
+                try {
+                    id = Integer.parseInt(text.getText());
+                    for (int i = 0; i < tableModel.getRowCount(); i++) {
+                        System.out.println(tableModel.getValueAt(i, 0));
+                        if (Integer.parseInt(String.valueOf(tableModel.getValueAt(i, 0))) == id) {
+                            is_real = true;
+                        }
+                    }
+                    if (!is_real) {
+                        throw new Exception("Bad id");
+                    }
+                    socket.send_message("CloseTicket_" + text.getText());
+                    String word = socket.recieve_message();
+                    System.out.println(word);
+                    if (word.equals("Already closed")) {
+                        throw new Exception("Already closed");
+                    } else if (!word.equals("OK")){
+                        throw new Exception("Database error");
+                    }
+                    text.setText("");
+                    dialog.setVisible(false);
+                } catch (NumberFormatException e) {
+                    label.setText("Id must be a number!");
+                    text.setText("");
+                } catch (Exception e) {
+                    if (e.getMessage().equals("Bad id")) {
+                        label.setText("Wrong id!");
+                        text.setText("");
+                    } else if (e.getMessage().equals("Database error")) {
+                        label.setText("DB error. ID not found");
+                        text.setText("");
+                    } else if (e.getMessage().equals("Already closed")) {
+                        label.setText("Already close!");
+                        text.setText("");
+                    }
+                }
+            }
+            public void actionPerformed(ActionEvent ae) {
+                System.out.println(ae.getActionCommand());
+                if(ae.getActionCommand().equals("refresh")) {
+                    refresh_ticket();
+                } else if(ae.getActionCommand().equals("close")) {
+                    close_form();
+                } else if(ae.getActionCommand().equals("close_ok")) {
+                    close_ticket();
+                }
+            }
         }
 
         //Action after push button Reserves
-        public void DrawReserves() {
-            String word;
-            socket.send_message("DrawReserves");
-            word = socket.recieve_message();
+        private class DrawReserves implements ActionListener {
+            DrawReserves() {
+                socket.send_message("DrawReserves");
+                String word = socket.recieve_message();
 
-            String data[][] = ParsJSON(word);
+                String[] col = {"Id", "Ticket", "Book"};
+                String[][] data = ParsJSON(word);
 
-            String col[] = {"Id","Ticket","Book"};
+                JFrame frame = new JFrame("Reserves");
+                JPanel panel = new JPanel();
+                JTable table = new JTable(data, col);
+                JTableHeader header = table.getTableHeader();
+                header.setBackground(Color.yellow);
+                JScrollPane pane = new JScrollPane(table);
+                table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+                panel.add(pane);
+                frame.add(panel);
 
-            JFrame frame = new JFrame("Reserves");
-            JPanel panel = new JPanel();
-            JTable table = new JTable(data,col);
-            JTableHeader header = table.getTableHeader();
-            header.setBackground(Color.yellow);
-            JScrollPane pane = new JScrollPane(table);
-            table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-            panel.add(pane);
-            frame.add(panel);
+                table.getColumnModel().getColumn(0).setWidth(20);
+                table.getColumnModel().getColumn(1).setWidth(50);
+                table.getColumnModel().getColumn(2).setWidth(50);
 
-            table.getColumnModel().getColumn( 0 ).setWidth( 20 );
-            table.getColumnModel().getColumn( 1 ).setWidth( 50 );
-            table.getColumnModel().getColumn( 2 ).setWidth( 50 );
+                frame.setSize(500, 500);
+                frame.setUndecorated(true);
+                frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
+                frame.setVisible(true);
+            }
+            public void actionPerformed(ActionEvent ae) {
 
-            frame.setSize(500, 500);
-            frame.setUndecorated(true);
-            frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
-            frame.setVisible(true);
+            }
         }
 
         //Action after push button Books
-        public void DrawBooks() {
-            String word;
-            socket.send_message("DrawBooks");
-            word = socket.recieve_message();
+        private class DrawBooks implements ActionListener {
+            DrawBooks() {
+                socket.send_message("DrawBooks");
+                String word = socket.recieve_message();
 
-            String data[][] = ParsJSON(word);
+                String[] col = {"Id", "Name", "Author", "Publisher", "Pub_year"};
+                String[][] data = ParsJSON(word);
 
-            String col[] = {"Id","Name","Author", "Publisher", "Pub_year"};
+                JFrame frame = new JFrame("Books");
+                JPanel panel = new JPanel();
+                JTable table = new JTable(data, col);
+                JTableHeader header = table.getTableHeader();
+                header.setBackground(Color.yellow);
+                JScrollPane pane = new JScrollPane(table);
+                table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+                panel.add(pane);
+                frame.add(panel);
 
-            JFrame frame = new JFrame("Books");
-            JPanel panel = new JPanel();
-            JTable table = new JTable(data,col);
-            JTableHeader header = table.getTableHeader();
-            header.setBackground(Color.yellow);
-            JScrollPane pane = new JScrollPane(table);
-            table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-            panel.add(pane);
-            frame.add(panel);
+                table.getColumnModel().getColumn(0).setWidth(20);
+                table.getColumnModel().getColumn(1).setWidth(100);
+                table.getColumnModel().getColumn(2).setWidth(20);
+                table.getColumnModel().getColumn(3).setWidth(20);
+                table.getColumnModel().getColumn(4).setWidth(50);
 
-            table.getColumnModel().getColumn( 0 ).setWidth( 20 );
-            table.getColumnModel().getColumn( 1 ).setWidth( 100 );
-            table.getColumnModel().getColumn( 2 ).setWidth( 20 );
-            table.getColumnModel().getColumn( 3 ).setWidth( 20 );
-            table.getColumnModel().getColumn( 4 ).setWidth( 50 );
+                frame.setSize(500, 500);
+                frame.setUndecorated(true);
+                frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
+                frame.setVisible(true);
+            }
+            public void actionPerformed(ActionEvent ae) {
 
-            frame.setSize(500, 500);
-            frame.setUndecorated(true);
-            frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
-            frame.setVisible(true);
+            }
         }
 
         //Action after push button Authors
-        public void DrawAuthors() {
-            String word;
-            socket.send_message("DrawAuthors");
-            word = socket.recieve_message();
+        private class DrawAuthors implements ActionListener {
+            DrawAuthors() {
+                socket.send_message("DrawAuthors");
+                String word = socket.recieve_message();
 
-            String data[][] = ParsJSON(word);
+                String[] col = {"Id", "FIO"};
+                String[][] data = ParsJSON(word);
 
-            String col[] = {"Id","FIO"};
+                JFrame frame = new JFrame("Authors");
+                JPanel panel = new JPanel();
+                JTable table = new JTable(data, col);
+                JTableHeader header = table.getTableHeader();
+                header.setBackground(Color.yellow);
+                JScrollPane pane = new JScrollPane(table);
+                table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+                panel.add(pane);
+                frame.add(panel);
 
-            JFrame frame = new JFrame("Authors");
-            JPanel panel = new JPanel();
-            JTable table = new JTable(data,col);
-            JTableHeader header = table.getTableHeader();
-            header.setBackground(Color.yellow);
-            JScrollPane pane = new JScrollPane(table);
-            table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-            panel.add(pane);
-            frame.add(panel);
+                table.getColumnModel().getColumn(0).setWidth(20);
+                table.getColumnModel().getColumn(1).setWidth(100);
 
-            table.getColumnModel().getColumn( 0 ).setWidth( 20 );
-            table.getColumnModel().getColumn( 1 ).setWidth( 100 );
+                frame.setSize(500, 500);
+                frame.setUndecorated(true);
+                frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
+                frame.setVisible(true);
+            }
+            public void actionPerformed(ActionEvent ae) {
 
-            frame.setSize(500, 500);
-            frame.setUndecorated(true);
-            frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
-            frame.setVisible(true);
+            }
         }
 
         //Action after push button Publishers
-        public void DrawPublishers() {
-            String word;
-            socket.send_message("DrawPublishers");
-            word = socket.recieve_message();
+        private class DrawPublishers implements ActionListener {
+            DrawPublishers() {
+                socket.send_message("DrawPublishers");
+                String word = socket.recieve_message();
 
-            String data[][] = ParsJSON(word);
+                String[] col = {"Id", "Name", "Adress"};
+                String[][] data = ParsJSON(word);
 
-            String col[] = {"Id","Name", "Adress"};
+                JFrame frame = new JFrame("Publishers");
+                JPanel panel = new JPanel();
+                JTable table = new JTable(data, col);
+                JTableHeader header = table.getTableHeader();
+                header.setBackground(Color.yellow);
+                JScrollPane pane = new JScrollPane(table);
+                table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+                panel.add(pane);
+                frame.add(panel);
 
-            JFrame frame = new JFrame("Publishers");
-            JPanel panel = new JPanel();
-            JTable table = new JTable(data,col);
-            JTableHeader header = table.getTableHeader();
-            header.setBackground(Color.yellow);
-            JScrollPane pane = new JScrollPane(table);
-            table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-            panel.add(pane);
-            frame.add(panel);
+                table.getColumnModel().getColumn(0).setWidth(20);
+                table.getColumnModel().getColumn(1).setWidth(100);
 
-            table.getColumnModel().getColumn( 0 ).setWidth( 20 );
-            table.getColumnModel().getColumn( 1 ).setWidth( 100 );
+                frame.setSize(500, 500);
+                frame.setUndecorated(true);
+                frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
+                frame.setVisible(true);
+            }
+            public void actionPerformed(ActionEvent ae) {
 
-            frame.setSize(500, 500);
-            frame.setUndecorated(true);
-            frame.getRootPane().setWindowDecorationStyle(JRootPane.PLAIN_DIALOG);
-            frame.setVisible(true);
+            }
         }
 
         //push buttons handler
         public void actionPerformed(ActionEvent ae) {
 
             if(ae.getActionCommand().equals("clients")) {
-                DrawClients();
+                DrawClients exec_cl = new DrawClients();
             } else if (ae.getActionCommand().equals("tickets")) {
-                DrawTickets();
+                DrawTickets exec_tick = new DrawTickets();
             } else if (ae.getActionCommand().equals("reserves")) {
-                DrawReserves();
+                DrawReserves exec_res = new DrawReserves();
             } else if (ae.getActionCommand().equals("books")) {
-                DrawBooks();
+                DrawBooks exec_book = new DrawBooks();
             } else if (ae.getActionCommand().equals("authors")) {
-                DrawAuthors();
+                DrawAuthors exec_auth = new DrawAuthors();
             } else if (ae.getActionCommand().equals("publishers")) {
-                DrawPublishers();
+                DrawPublishers exec_pub = new DrawPublishers();
             }
         }
     }

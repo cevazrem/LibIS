@@ -71,20 +71,23 @@ public class Server {
                     }
                     String[][] result = new String[size + 1][4];
                     result[0][0] = "id";
-                    result[0][1] = "date_start";
-                    result[0][2] = "date_end";
-                    result[0][3] = "client";
+                    result[0][1] = "client";
+                    result[0][2] = "date_start";
+                    result[0][3] = "date_end";
+
                     clear_res();
-                    rs = stmt.executeQuery("SELECT id, date_start, date_end, client from Tickets");
+                    rs = stmt.executeQuery("SELECT id, client, date_start, date_end from Tickets");
                     while (rs.next()) {
                         int id = rs.getInt(1);
+                        int client = rs.getInt(2);
                         String date_start = rs.getString(3);
-                        String date_end = rs.getString(3);
-                        int client = rs.getInt(4);
+                        String date_end = rs.getString(4);
+
                         result[id][0] = Integer.toString(id);
-                        result[id][1] = date_start;
-                        result[id][2] = date_end;
-                        result[id][3] = Integer.toString(client);
+                        result[id][1] = Integer.toString(client);
+                        result[id][2] = date_start;
+                        result[id][3] = date_end;
+
                     }
                     return result;
                 } else if (table.equals("Reserves")) {
@@ -204,7 +207,35 @@ public class Server {
             }
             return null;
         }
+        public String close_execute(String table, int id) {
+            try {
+                rs = stmt.executeQuery("SELECT date_end > SYSDATE() FROM " + table + " where id = " + id);
+                while (rs.next()) {
+                    System.out.println(rs.getString(1));
+                    if (rs.getString(1) != null) {
+                        if (!rs.getString(1).equals("0")) {
+//                        System.out.println(rs.getString(1));
+                            throw new Exception("Already closed");
+                        }
+                    }
+                }
+                System.out.println(table);
+                System.out.println(id);
+                stmt.executeUpdate("UPDATE " + table + " SET date_end = SYSDATE() where id = " + id);
+
+            } catch (SQLException se) {
+                System.err.println(se);
+                return "error";
+            } catch (Exception e) {
+                if (e.getMessage().equals("Already closed")) {
+                    return "Already closed";
+                }
+            }
+            return "OK";
+        }
     }
+
+
 
     private static class socket {
         //socket construct
@@ -289,11 +320,16 @@ public class Server {
 
             String word = socket.recieve_message();
             while (!word.equals("stop") && !word.equals("error") && word != null ) {
+                System.out.println(word);
                 if (word.equals("DrawClient")) {
                     data = sql.select_execute("Clients");
                     message = create_JSON(data);
                     socket.send_message(message);
                 } else if (word.equals("DrawTickets")) {
+                    data = sql.select_execute("Tickets");
+                    message = create_JSON(data);
+                    socket.send_message(message);
+                } else if (word.equals("RefreshTickets")) {
                     data = sql.select_execute("Tickets");
                     message = create_JSON(data);
                     socket.send_message(message);
@@ -312,6 +348,9 @@ public class Server {
                 } else if (word.equals("DrawPublishers")) {
                     data = sql.select_execute("Publishers");
                     message = create_JSON(data);
+                    socket.send_message(message);
+                } else if (word.substring(0, word.indexOf("_")).equals("CloseTicket")) {
+                    message = sql.close_execute("Tickets", Integer.parseInt(word.substring(word.indexOf("_") + 1)));
                     socket.send_message(message);
                 }
                 //todo another operations(delete/add/view)
