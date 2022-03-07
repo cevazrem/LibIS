@@ -1,3 +1,4 @@
+DROP DATABASE LIB;
 CREATE DATABASE LIB;
 
 USE LIB;
@@ -10,7 +11,7 @@ CREATE TABLE Authors (
 CREATE TABLE Publishers (
 	id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) UNIQUE NOT NULL,
-    adress VARCHAR(255) NOT NULL
+    address VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE Books (
@@ -26,13 +27,13 @@ CREATE TABLE Books (
 CREATE TABLE Clients (
 	id INT PRIMARY KEY AUTO_INCREMENT,
     fio VARCHAR(255) NOT NULL,
-    birth_date DATE NOT NULL,
-    reg_date DATE NOT NULL,
-    end_date DATE,
+    date_birth DATE NOT NULL,
+    date_reg DATE NOT NULL,
+    date_end DATE,
     phone VARCHAR(20) UNIQUE NOT NULL,
-    CONSTRAINT chk_birth_date CHECK (birth_date > '1900-01-01'),
-    CONSTRAINT chk_reg_date CHECK (reg_date > '2021-01-01'),
-    CONSTRAINT chk_end_date CHECK (end_date > '2021-01-01'),
+    CONSTRAINT chk_birth_date CHECK (date_birth > '1900-01-01'),
+    CONSTRAINT chk_reg_date CHECK (date_reg > '2021-01-01'),
+    CONSTRAINT chk_end_date CHECK (date_end > '2021-01-01'),
     CONSTRAINT chk_phone CHECK (phone REGEXP '[+]?[0-9]{1,3} ?\\(?[0-9]{3}\\)? ?[0-9]{2}[0-9 -]+[0-9]{2}')
 );
 
@@ -55,7 +56,7 @@ CREATE TABLE Reserves (
 );
 INSERT INTO Authors (fio) values ('John Ronald Reuel Tolkien'), ('Joanne Rowling'), ('Stephen Edwin King'), ('Александр Сергеевич Пушкин'), ('Лев Николаевич Толстой'), ('Фёдор Михайлович Достоевский');
 
-INSERT INTO Publishers (name, adress) values 
+INSERT INTO Publishers (name, address) values 
 		('Эксмо — АСТ', '123308, город Москва, ул. Зорге, д. 1 стр. 1, этаж 20 каб 2013'),
         ('Феникс', '125009, город Москва, Тверская ул., д.6 стр.1'),
         ('ОЛМА Медиа Групп/ИД Просвещение', '129085, город Москва, Звездный б-р, д. 21 стр. 3, пом I комн 5');
@@ -90,7 +91,7 @@ INSERT INTO Books (name, author, publisher, pub_year) values
         ('Игрок', 6, 1, 2016),
         ('Бесы', 6, 1, 2022);
 	
-INSERT INTO Clients (fio, birth_date, reg_date, end_date, phone) values
+INSERT INTO Clients (fio, date_birth, date_reg, date_end, phone) values
 		('Иванов Иван Иванович', '2000-05-12', '2021-01-02', null, '+79999999999'),
 		('Петров Петр Петрович', '1990-09-09', '2021-01-02', null, '+78888888888'),
 		('Сергеев Сергей Сергеевич', '1991-10-21', '2021-01-02', null, '+77777777777'),
@@ -116,3 +117,7 @@ INSERT INTO Reserves (ticket, book) values
         (3, 18),
         (3, 20),
         (4, 12);
+        
+
+
+

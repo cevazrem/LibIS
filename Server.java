@@ -62,6 +62,7 @@ public class Server {
 
         public String[][] select_execute(String table) {
             int size = 1;
+            int cnt = 1;
            // System.out.println(table);
             try {
                 if (table.equals("Tickets")) {
@@ -83,11 +84,12 @@ public class Server {
                         String date_start = rs.getString(3);
                         String date_end = rs.getString(4);
 
-                        result[id][0] = Integer.toString(id);
-                        result[id][1] = Integer.toString(client);
-                        result[id][2] = date_start;
-                        result[id][3] = date_end;
+                        result[cnt][0] = Integer.toString(id);
+                        result[cnt][1] = Integer.toString(client);
+                        result[cnt][2] = date_start;
+                        result[cnt][3] = date_end;
 
+                        cnt++;
                     }
                     return result;
                 } else if (table.equals("Reserves")) {
@@ -105,9 +107,11 @@ public class Server {
                         int id = rs.getInt(1);
                         int ticket = rs.getInt(2);
                         int book = rs.getInt(3);
-                        result[id][0] = Integer.toString(id);
-                        result[id][1] = Integer.toString(ticket);
-                        result[id][2] = Integer.toString(book);
+                        result[cnt][0] = Integer.toString(id);
+                        result[cnt][1] = Integer.toString(ticket);
+                        result[cnt][2] = Integer.toString(book);
+
+                        cnt++;
                     }
                     return result;
                 } else if (table.equals("Books")) {
@@ -129,11 +133,13 @@ public class Server {
                         int author = rs.getInt(3);
                         int publisher = rs.getInt(4);
                         int pub_year = rs.getInt(5);
-                        result[id][0] = Integer.toString(id);
-                        result[id][1] = name;
-                        result[id][2] = Integer.toString(author);
-                        result[id][3] = Integer.toString(publisher);
-                        result[id][4] = Integer.toString(pub_year);
+                        result[cnt][0] = Integer.toString(id);
+                        result[cnt][1] = name;
+                        result[cnt][2] = Integer.toString(author);
+                        result[cnt][3] = Integer.toString(publisher);
+                        result[cnt][4] = Integer.toString(pub_year);
+
+                        cnt++;
                     }
                     return result;
                 } else if (table.equals("Authors")) {
@@ -149,8 +155,10 @@ public class Server {
                     while (rs.next()) {
                         int id = rs.getInt(1);
                         String fio = rs.getString(2);
-                        result[id][0] = Integer.toString(id);
-                        result[id][1] = fio;
+                        result[cnt][0] = Integer.toString(id);
+                        result[cnt][1] = fio;
+
+                        cnt++;
                     }
                     return result;
                 } else if (table.equals("Publishers")) {
@@ -161,15 +169,17 @@ public class Server {
                     String[][] result = new String[size + 1][3];
                     result[0][0] = "id";
                     result[0][1] = "name";
-                    result[0][2] = "adress";
-                    rs = stmt.executeQuery("SELECT id, name, adress from Publishers");
+                    result[0][2] = "address";
+                    rs = stmt.executeQuery("SELECT id, name, address from Publishers");
                     while (rs.next()) {
                         int id = rs.getInt(1);
                         String name = rs.getString(2);
-                        String adress = rs.getString(3);
-                        result[id][0] = Integer.toString(id);
-                        result[id][1] = name;
-                        result[id][2] = adress;
+                        String address = rs.getString(3);
+                        result[cnt][0] = Integer.toString(id);
+                        result[cnt][1] = name;
+                        result[cnt][2] = address;
+
+                        cnt++;
                     }
                     return result;
                 } else if (table.equals("Clients")) {
@@ -180,24 +190,26 @@ public class Server {
                     String[][] result = new String[size + 1][6];
                     result[0][0] = "id";
                     result[0][1] = "fio";
-                    result[0][2] = "birth_date";
-                    result[0][3] = "reg_date";
-                    result[0][4] = "end_date";
+                    result[0][2] = "date_birth";
+                    result[0][3] = "date_reg";
+                    result[0][4] = "date_end";
                     result[0][5] = "phone";
-                    rs = stmt.executeQuery("SELECT id, fio, birth_date, reg_date, end_date, phone from Clients");
+                    rs = stmt.executeQuery("SELECT id, fio, date_birth, date_reg, date_end, phone from Clients");
                     while (rs.next()) {
                         int id = rs.getInt(1);
                         String fio = rs.getString(2);
-                        String birth_date = rs.getString(3);
-                        String reg_date = rs.getString(4);
-                        String end_date = rs.getString(5);
+                        String date_birth = rs.getString(3);
+                        String date_reg = rs.getString(4);
+                        String date_end = rs.getString(5);
                         String phone = rs.getString(6);
-                        result[id][0] = Integer.toString(id);
-                        result[id][1] = fio;
-                        result[id][2] = birth_date;
-                        result[id][3] = reg_date;
-                        result[id][4] = end_date;
-                        result[id][5] = phone;
+                        result[cnt][0] = Integer.toString(id);
+                        result[cnt][1] = fio;
+                        result[cnt][2] = date_birth;
+                        result[cnt][3] = date_reg;
+                        result[cnt][4] = date_end;
+                        result[cnt][5] = phone;
+
+                        cnt++;
                     }
                     return result;
                 }
@@ -209,7 +221,7 @@ public class Server {
         }
         public String close_execute(String table, int id) {
             try {
-                rs = stmt.executeQuery("SELECT date_end > SYSDATE() FROM " + table + " where id = " + id);
+                rs = stmt.executeQuery("SELECT date_end < SYSDATE() FROM " + table + " where id = " + id);
                 while (rs.next()) {
                     System.out.println(rs.getString(1));
                     if (rs.getString(1) != null) {
@@ -230,6 +242,19 @@ public class Server {
                 if (e.getMessage().equals("Already closed")) {
                     return "Already closed";
                 }
+            }
+            return "OK";
+        }
+
+        public String delete_execute(String table, int id) {
+            try {
+                System.out.println(table);
+                System.out.println(id);
+                stmt.executeUpdate("DELETE FROM " + table + " where id = " + id);
+
+            } catch (SQLException se) {
+                System.err.println(se);
+                return "error";
             }
             return "OK";
         }
@@ -325,6 +350,10 @@ public class Server {
                     data = sql.select_execute("Clients");
                     message = create_JSON(data);
                     socket.send_message(message);
+                } else if (word.equals("RefreshClients")) {
+                    data = sql.select_execute("Clients");
+                    message = create_JSON(data);
+                    socket.send_message(message);
                 } else if (word.equals("DrawTickets")) {
                     data = sql.select_execute("Tickets");
                     message = create_JSON(data);
@@ -337,7 +366,15 @@ public class Server {
                     data = sql.select_execute("Reserves");
                     message = create_JSON(data);
                     socket.send_message(message);
+                } else if (word.equals("RefreshReserves")) {
+                    data = sql.select_execute("Reserves");
+                    message = create_JSON(data);
+                    socket.send_message(message);
                 } else if (word.equals("DrawBooks")) {
+                    data = sql.select_execute("Books");
+                    message = create_JSON(data);
+                    socket.send_message(message);
+                } else if (word.equals("RefreshBooks")) {
                     data = sql.select_execute("Books");
                     message = create_JSON(data);
                     socket.send_message(message);
@@ -345,12 +382,26 @@ public class Server {
                     data = sql.select_execute("Authors");
                     message = create_JSON(data);
                     socket.send_message(message);
+                } else if (word.equals("RefreshAuthors")) {
+                    data = sql.select_execute("Authors");
+                    message = create_JSON(data);
+                    socket.send_message(message);
                 } else if (word.equals("DrawPublishers")) {
+                    data = sql.select_execute("Publishers");
+                    message = create_JSON(data);
+                    socket.send_message(message);
+                } else if (word.equals("RefreshPublishers")) {
                     data = sql.select_execute("Publishers");
                     message = create_JSON(data);
                     socket.send_message(message);
                 } else if (word.substring(0, word.indexOf("_")).equals("CloseTicket")) {
                     message = sql.close_execute("Tickets", Integer.parseInt(word.substring(word.indexOf("_") + 1)));
+                    socket.send_message(message);
+                } else if (word.substring(0, word.indexOf("_")).equals("CloseClient")) {
+                    message = sql.close_execute("Clients", Integer.parseInt(word.substring(word.indexOf("_") + 1)));
+                    socket.send_message(message);
+                } else if (word.substring(0, word.indexOf("_")).equals("CloseReserves")) {
+                    message = sql.delete_execute("Reserves", Integer.parseInt(word.substring(word.indexOf("_") + 1)));
                     socket.send_message(message);
                 }
                 //todo another operations(delete/add/view)
