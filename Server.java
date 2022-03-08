@@ -65,7 +65,50 @@ public class Server {
             int cnt = 1;
            // System.out.println(table);
             try {
-                if (table.equals("Tickets")) {
+                if (table.equals("All")) {
+                    rs = stmt.executeQuery(
+                            "select count(*) from Clients cl\n" +
+                            "join Tickets tk on tk.client = cl.id\n" +
+                            "join Reserves res on res.ticket = tk.id\n" +
+                            "join Books bk on bk.id = res.book\n" +
+                            "join Publishers pub on pub.id = bk.publisher\n" +
+                            "join Authors au on au.id = bk.author\n" +
+                            "where cl.date_end is null\n" +
+                            "and tk.date_end is null");
+                    while (rs.next()) {
+                        size = rs.getInt(1);
+                    }
+                    String[][] result = new String[size + 1][4];
+                    result[0][0] = "client_fio";
+                    result[0][1] = "date_start";
+                    result[0][2] = "book_name";
+                    result[0][3] = "author_fio";
+
+                    clear_res();
+                    rs = stmt.executeQuery(
+                            "select cl.fio, tk.date_start, bk.name, au.fio from Clients cl\n" +
+                                    "join Tickets tk on tk.client = cl.id\n" +
+                                    "join Reserves res on res.ticket = tk.id\n" +
+                                    "join Books bk on bk.id = res.book\n" +
+                                    "join Publishers pub on pub.id = bk.publisher\n" +
+                                    "join Authors au on au.id = bk.author\n" +
+                                    "where cl.date_end is null\n" +
+                                    "and tk.date_end is null");
+                    while (rs.next()) {
+                        String client_fio = rs.getString(1);
+                        String date_start = rs.getString(2);
+                        String book_name = rs.getString(3);
+                        String author_fio = rs.getString(4);
+
+                        result[cnt][0] = client_fio;
+                        result[cnt][1] = date_start;
+                        result[cnt][2] = book_name;
+                        result[cnt][3] = author_fio;
+
+                        cnt++;
+                    }
+                    return result;
+                } else if (table.equals("Tickets")) {
                     rs = stmt.executeQuery("SELECT count(id) FROM Tickets");
                     while (rs.next()) {
                         size = rs.getInt(1);
@@ -258,6 +301,28 @@ public class Server {
             }
             return "OK";
         }
+
+        public String insert_execute(String table, String data) {
+            try {
+                if (table.equals("Clients")) {
+                    String fio = data.substring(0, data.indexOf("_"));
+                    data = data.substring(data.indexOf("_") + 1);
+                    String birth = data.substring(0, data.indexOf("_"));
+                    String phone = data.substring(data.indexOf("_") + 1);
+                    System.out.println("INSERT INTO " + table + " (fio, date_birth, date_reg, date_end, phone) values " +
+                            "('" + fio + "', '" + birth + "', SYSDATE, null, '" + phone + "')");
+                    stmt.executeUpdate("INSERT INTO " + table + " (fio, date_birth, date_reg, date_end, phone) values " +
+                            "('" + fio + "', '" + birth + "', SYSDATE(), null, '" + phone + "')");
+
+                }
+            } catch (SQLException se) {
+                System.err.println(se);
+                return "error";
+            } catch (Exception e) {
+                return "error";
+            }
+            return "OK";
+        }
     }
 
 
@@ -394,6 +459,14 @@ public class Server {
                     data = sql.select_execute("Publishers");
                     message = create_JSON(data);
                     socket.send_message(message);
+                } else if (word.equals("DrawAll")) {
+                    data = sql.select_execute("All");
+                    message = create_JSON(data);
+                    socket.send_message(message);
+                } else if (word.equals("RefreshAll")) {
+                    data = sql.select_execute("All");
+                    message = create_JSON(data);
+                    socket.send_message(message);
                 } else if (word.substring(0, word.indexOf("_")).equals("CloseTicket")) {
                     message = sql.close_execute("Tickets", Integer.parseInt(word.substring(word.indexOf("_") + 1)));
                     socket.send_message(message);
@@ -402,6 +475,9 @@ public class Server {
                     socket.send_message(message);
                 } else if (word.substring(0, word.indexOf("_")).equals("CloseReserves")) {
                     message = sql.delete_execute("Reserves", Integer.parseInt(word.substring(word.indexOf("_") + 1)));
+                    socket.send_message(message);
+                } else if (word.substring(0, word.indexOf("_")).equals("InsertClients")) {
+                    message = sql.insert_execute("Clients", word.substring(word.indexOf("_") + 1));
                     socket.send_message(message);
                 }
                 //todo another operations(delete/add/view)

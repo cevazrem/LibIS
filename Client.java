@@ -65,11 +65,16 @@ public class Client {
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         int width = (int)screenSize.getWidth();
         int height = (int)screenSize.getHeight();
-        private static JFrame jfrm;
+        private static JFrame           jfrm;
+        private final JPanel            panel;
+        private final JTable            table;
+        private final JTableHeader      header;
+        private final DefaultTableModel tableModel;
+
         TFDemo() {
             //constructor for start form
             jfrm = new JFrame("LibIS");
-            jfrm.setLayout(new FlowLayout());
+            //jfrm.setLayout(new GridLayout());
             jfrm.setSize(width, height);
             jfrm.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -89,6 +94,27 @@ public class Client {
             jbtntest5.addActionListener(this);
             jbtntest6.addActionListener(this);
 
+            socket.send_message("DrawAll");
+            String word = socket.recieve_message();
+            panel = new JPanel();
+            String[] col = {"Client_fio", "date_start", "Book_name", "Author_fio"};
+            tableModel = new DefaultTableModel(ParsJSON(word), col);
+            table = new JTable(tableModel);
+
+            header = table.getTableHeader();
+
+            header.setBackground(Color.yellow);
+            JScrollPane pane = new JScrollPane(table);
+            //table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+            jbtntest1.setBounds(width / 16 - 75, height / 4 - 25, 150, 50);
+            jbtntest2.setBounds(width * 3 / 16 - 75,height / 4 - 25, 150, 50);
+            jbtntest3.setBounds(width / 16 - 75, height / 2 - 25, 150, 50);
+            jbtntest4.setBounds(width * 3 / 16 - 75,height / 2 - 25, 150, 50);
+            jbtntest5.setBounds(width / 16 - 75, height * 3 / 4 - 25, 150, 50);
+            jbtntest6.setBounds(width * 3 / 16 - 75,height * 3/ 4 - 25, 150, 50);
+
+            pane.setPreferredSize(new Dimension(width/2, height*9/10));
             //add buttons to window
             jfrm.add(jbtntest1);
             jfrm.add(jbtntest2);
@@ -96,6 +122,9 @@ public class Client {
             jfrm.add(jbtntest4);
             jfrm.add(jbtntest5);
             jfrm.add(jbtntest6);
+
+            panel.add(pane);
+            jfrm.add(panel);
 
             jfrm.setVisible(true);
         }
@@ -137,12 +166,18 @@ public class Client {
             private final JPanel            panel;
             private final JTable            table;
             private final JTableHeader      header;
+            private final JButton           insert_cl;
             private final JButton           refresh_cl;
             private final JButton           delete_cl;
             private final DefaultTableModel tableModel;
+            private JDialog                 insert_dialog;
             private JDialog                 dialog;
             private JTextField              text;
             private JLabel                  label;
+            private JTextField              text_fio;
+            private JTextField              text_birth_date;
+            private JTextField              text_phone;
+
             private String[] get_col() {
                 String[] col = {"Id", "FIO", "Date_birth", "Date_reg", "Date_end", "Phone"};
                 return col;
@@ -170,7 +205,8 @@ public class Client {
                 refresh_cl.addActionListener(this);
                 delete_cl = new JButton("close");
                 delete_cl.addActionListener(this);
-
+                insert_cl = new JButton("insert");
+                insert_cl.addActionListener(this);
 
                 header.setBackground(Color.yellow);
                 JScrollPane pane = new JScrollPane(table);
@@ -179,6 +215,7 @@ public class Client {
                 frame.add(panel);
                 frame.add(refresh_cl);
                 frame.add(delete_cl);
+                frame.add(insert_cl);
                 //frame.setLocationRelativeTo(parent);
 
                 table.getColumnModel().getColumn(0).setWidth(20);
@@ -262,6 +299,47 @@ public class Client {
                     }
                 }
             }
+
+            private void insert_form() {
+                insert_dialog = new JDialog(frame);
+                insert_dialog.setSize(250, 250);
+                JPanel p = new JPanel();
+                JLabel fio_label = new JLabel("Введите фио клиента:");
+                JLabel birth_label = new JLabel("Введите дату рождения клиента:");
+                JLabel phone_label = new JLabel("Введите телефон клиента:");
+                text_fio = new JTextField(20);
+                text_birth_date = new JTextField(20);
+                text_phone = new JTextField(20);
+                JButton enter = new JButton("ok");
+                enter.setActionCommand("insert_ok");
+                enter.addActionListener(this);
+                insert_dialog.setAlwaysOnTop(true);
+                p.add(fio_label);
+                p.add(text_fio);
+                p.add(birth_label);
+                p.add(text_birth_date);
+                p.add(phone_label);
+                p.add(text_phone);
+                p.add(enter);
+                insert_dialog.add(p);
+                insert_dialog.setVisible(true);
+            }
+
+            private void insert_client() {
+                String fio = text_fio.getText();
+                String birth_date = text_birth_date.getText();
+                String phone = text_phone.getText();
+                socket.send_message("InsertClients_" + fio + "_" + birth_date + "_" + phone);
+                text_fio.setText("");
+                text_birth_date.setText("");
+                text_phone.setText("");
+                String word = socket.recieve_message();
+                if (word.equals("OK")) {
+                    insert_dialog.setVisible(false);
+                }
+            }
+
+
             public void actionPerformed(ActionEvent ae) {
                 System.out.println(ae.getActionCommand());
                 if(ae.getActionCommand().equals("refresh")) {
@@ -269,7 +347,12 @@ public class Client {
                 } else if(ae.getActionCommand().equals("close")) {
                     close_client_form();
                 } else if(ae.getActionCommand().equals("close_ok")) {
-                    close_client();}
+                    close_client();
+                } else if (ae.getActionCommand().equals("insert")) {
+                    insert_form();
+                } else if(ae.getActionCommand().equals("insert_ok")) {
+                    insert_client();
+                }
             }
         }
         //Action after push button Tickets
@@ -406,72 +489,7 @@ public class Client {
                     }
                 }
             }
- /*           private void insert_form() {
-                dialog = new JDialog(frame);
-                dialog.setSize(400, 400);
-                JPanel p = new JPanel();
-                label = new JLabel("Enter values:");
-                text_id = new JTextField(16);
-                text_date_start = new JTextField(16);
-                text_date_end = new JTextField(16);
-                JButton enter = new JButton("ok");
-                enter.setActionCommand("close_ok");
-                enter.addActionListener(this);
-                dialog.setAlwaysOnTop(true);
-                p.add(label);
-                p.add(text_id);
-                p.add(text_date_start);
-                p.add(text_date_end);
-                p.add(enter);
-                dialog.add(p);
-                dialog.setVisible(true);
-                //socket.send_message("DeleteRow");
-            }
 
-            private void insert_ticket() {
-                int id;
-                boolean is_real = false;
-                try {
-                    id = Integer.parseInt(text_id.getText());
-                    for (int i = 0; i < tableModel.getRowCount(); i++) {
-                        System.out.println(tableModel.getValueAt(i, 0));
-                        if (Integer.parseInt(String.valueOf(tableModel.getValueAt(i, 0))) == id) {
-                            is_real = true;
-                        }
-                    }
-                    if (!is_real) {
-                        throw new Exception("Bad id");
-                    }
-
-
-
-                    socket.send_message("CloseTicket_" + text_id.getText());
-                    String word = socket.recieve_message();
-                    System.out.println(word);
-                    if (word.equals("Already closed")) {
-                        throw new Exception("Already closed");
-                    } else if (!word.equals("OK")){
-                        throw new Exception("Database error");
-                    }
-                    text_id.setText("");
-                    dialog.setVisible(false);
-                } catch (NumberFormatException e) {
-                    label.setText("Id must be a number!");
-                    text_id.setText("");
-                } catch (Exception e) {
-                    if (e.getMessage().equals("Bad id")) {
-                        label.setText("Wrong id!");
-                        text_id.setText("");
-                    } else if (e.getMessage().equals("Database error")) {
-                        label.setText("DB error. ID not found");
-                        text_id.setText("");
-                    } else if (e.getMessage().equals("Already closed")) {
-                        label.setText("Already close!");
-                        text_id.setText("");
-                    }
-                }
-            }
-*/
             public void actionPerformed(ActionEvent ae) {
                 System.out.println(ae.getActionCommand());
                 if(ae.getActionCommand().equals("refresh")) {
