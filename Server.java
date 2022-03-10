@@ -190,16 +190,22 @@ public class Server {
                     while (rs.next()) {
                         size = rs.getInt(1);
                     }
-                    String[][] result = new String[size + 1][2];
+                    String[][] result = new String[size + 1][4];
                     result[0][0] = "id";
                     result[0][1] = "fio";
+                    result[0][2] = "date_birth";
+                    result[0][3] = "country_birth";
                     clear_res();
-                    rs = stmt.executeQuery("SELECT id, fio from Authors");
+                    rs = stmt.executeQuery("SELECT id, fio, date_birth, country_birth from Authors");
                     while (rs.next()) {
                         int id = rs.getInt(1);
                         String fio = rs.getString(2);
+                        String date_birth = rs.getString(3);
+                        String country_birth = rs.getString(4);
                         result[cnt][0] = Integer.toString(id);
                         result[cnt][1] = fio;
+                        result[cnt][2] = date_birth;
+                        result[cnt][3] = country_birth;
 
                         cnt++;
                     }
@@ -314,6 +320,46 @@ public class Server {
                     stmt.executeUpdate("INSERT INTO " + table + " (fio, date_birth, date_reg, date_end, phone) values " +
                             "('" + fio + "', '" + birth + "', SYSDATE(), null, '" + phone + "')");
 
+                } else if (table.equals("Authors")) {
+                    String fio = data.substring(0, data.indexOf("_"));
+                    data = data.substring(data.indexOf("_") + 1);
+                    String birth_date = data.substring(0, data.indexOf("_"));
+                    String birth_country = data.substring(data.indexOf("_") + 1);
+                    System.out.println("INSERT INTO " + table + " (fio, date_birth, country_birth) values " +
+                            "('" + fio + "', '" + birth_date + "', '" + birth_country + "')");
+                    stmt.executeUpdate("INSERT INTO " + table + " (name, date_birth, country_birth) values " +
+                            "('" + fio + "', '" + birth_date + "', '" + birth_country + "')");
+                } else if (table.equals("Publishers")) {
+                    String name = data.substring(0, data.indexOf("_"));
+                    String address = data.substring(data.indexOf("_") + 1);
+                    System.out.println("INSERT INTO " + table + " (fio, address) values " +
+                            "('" + name + "', '" + address + "')");
+                    stmt.executeUpdate("INSERT INTO " + table + " (name, address) values " +
+                            "('" + name + "', '" + address + "')");
+                } else if (table.equals("Books")) {
+                    String name = data.substring(0, data.indexOf("_"));
+                    data = data.substring(data.indexOf("_") + 1);
+                    String author_text = data.substring(0, data.indexOf("_"));
+                    data = data.substring(data.indexOf("_") + 1);
+                    String publisher_text = data.substring(0, data.indexOf("_"));
+                    String pub_year = data.substring(data.indexOf("_") + 1);
+
+                    String author_id = null;
+                    String publisher_id = null;
+
+                    rs = stmt.executeQuery("SELECT id FROM Authors WHERE fio = '" + author_text + "'");
+                    while (rs.next()) {
+                        author_id = rs.getString(1);
+                    }
+                    clear_res();
+                    rs = stmt.executeQuery("SELECT id FROM Publishers WHERE name = '" + publisher_text + "'");
+                    while (rs.next()) {
+                        publisher_id = rs.getString(1);
+                    }
+                    System.out.println("INSERT INTO " + table + " (name, author, publisher, pub_year) values " +
+                            "('" + name + "', '" + author_id + "', '" + publisher_id + "', '" + pub_year + "')");
+                    stmt.executeUpdate("INSERT INTO " + table + " (name, author, publisher, pub_year) values " +
+                            "('" + name + "', '" + author_id + "', '" + publisher_id + "', '" + pub_year + "')");
                 }
             } catch (SQLException se) {
                 System.err.println(se);
@@ -322,6 +368,66 @@ public class Server {
                 return "error";
             }
             return "OK";
+        }
+
+        public String[][] get_authors() {
+            int size = 1;
+            int cnt = 1;
+            try {
+                rs = stmt.executeQuery("SELECT count(id) FROM Authors");
+                while (rs.next()) {
+                    size = rs.getInt(1);
+                }
+                String[][] result = new String[size + 1][2];
+                result[0][0] = "id";
+                result[0][1] = "fio";
+
+                clear_res();
+                rs = stmt.executeQuery("SELECT id, fio from Authors");
+                while (rs.next()) {
+                    int id = rs.getInt(1);
+                    String fio = rs.getString(2);
+
+                    result[cnt][0] = Integer.toString(id);
+                    result[cnt][1] = fio;
+
+                    cnt++;
+                }
+                return result;
+            } catch (SQLException se) {
+                System.err.println(se);
+            }
+            return null;
+        }
+
+        public String[][] get_publishers() {
+            int size = 1;
+            int cnt = 1;
+            try {
+                rs = stmt.executeQuery("SELECT count(id) FROM Publishers");
+                while (rs.next()) {
+                    size = rs.getInt(1);
+                }
+                String[][] result = new String[size + 1][2];
+                result[0][0] = "id";
+                result[0][1] = "name";
+
+                clear_res();
+                rs = stmt.executeQuery("SELECT id, name from Publishers");
+                while (rs.next()) {
+                    int id = rs.getInt(1);
+                    String name = rs.getString(2);
+
+                    result[cnt][0] = Integer.toString(id);
+                    result[cnt][1] = name;
+
+                    cnt++;
+                }
+                return result;
+            } catch (SQLException se) {
+                System.err.println(se);
+            }
+            return null;
         }
     }
 
@@ -467,6 +573,15 @@ public class Server {
                     data = sql.select_execute("All");
                     message = create_JSON(data);
                     socket.send_message(message);
+
+                } else if (word.equals("GetAuthors")) {
+                    data = sql.get_authors();
+                    message = create_JSON(data);
+                    socket.send_message(message);
+                } else if (word.equals("GetPublishers")) {
+                    data = sql.get_publishers();
+                    message = create_JSON(data);
+                    socket.send_message(message);
                 } else if (word.substring(0, word.indexOf("_")).equals("CloseTicket")) {
                     message = sql.close_execute("Tickets", Integer.parseInt(word.substring(word.indexOf("_") + 1)));
                     socket.send_message(message);
@@ -478,6 +593,15 @@ public class Server {
                     socket.send_message(message);
                 } else if (word.substring(0, word.indexOf("_")).equals("InsertClients")) {
                     message = sql.insert_execute("Clients", word.substring(word.indexOf("_") + 1));
+                    socket.send_message(message);
+                } else if (word.substring(0, word.indexOf("_")).equals("InsertAuthors")) {
+                    message = sql.insert_execute("Authors", word.substring(word.indexOf("_") + 1));
+                    socket.send_message(message);
+                } else if (word.substring(0, word.indexOf("_")).equals("InsertPublishers")) {
+                    message = sql.insert_execute("Publishers", word.substring(word.indexOf("_") + 1));
+                    socket.send_message(message);
+                } else if (word.substring(0, word.indexOf("_")).equals("InsertBooks")) {
+                    message = sql.insert_execute("Books", word.substring(word.indexOf("_") + 1));
                     socket.send_message(message);
                 }
                 //todo another operations(delete/add/view)

@@ -98,7 +98,7 @@ public class Client {
             String word = socket.recieve_message();
             panel = new JPanel();
             String[] col = {"Client_fio", "date_start", "Book_name", "Author_fio"};
-            tableModel = new DefaultTableModel(ParsJSON(word), col);
+            tableModel = new DefaultTableModel(ParsJSON(word, 0), col);
             table = new JTable(tableModel);
 
             header = table.getTableHeader();
@@ -130,7 +130,7 @@ public class Client {
         }
 
         //JSON parser
-        public String[][] ParsJSON(String data) {
+        public String[][] ParsJSON(String data, int mode) {
             String tmp = data;
             int size_m = (tmp.length() - tmp.replace("},{", "").length()) / 3 + 1;
             //System.out.println(size_m);
@@ -138,7 +138,12 @@ public class Client {
             int size_n = (tmp.length() - tmp.replace("\":\"", "").length()) / 3 / size_m;
             //System.out.println(size_n);
             StringBuilder value = new StringBuilder();
-            String[][] result = new String[size_m][size_n] ;
+            String[][] result;
+            if (mode == 0) {
+                result = new String[size_m][size_n];
+            } else {
+                result = new String[size_n][size_m];
+            }
             int col_pos = 0;
             int row_pos = 0;
             char[] chars = data.toCharArray();
@@ -148,7 +153,11 @@ public class Client {
                         value.append(chars[i + 1]);
                         i++;
                     }
-                    result[row_pos][col_pos] = value.toString();
+                    if (mode == 0) {
+                        result[row_pos][col_pos] = value.toString();
+                    } else {
+                        result[col_pos][row_pos] = value.toString();
+                    }
                     value = new StringBuilder();
                     col_pos++;
                 }
@@ -183,8 +192,8 @@ public class Client {
                 return col;
             }
 
-            private String[][] get_data(String word) {
-                return ParsJSON(word);
+            private String[][] get_data(String word, int mode) {
+                return ParsJSON(word, mode);
             }
 
             DrawClients() {
@@ -192,7 +201,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 frame = new JFrame("Clients");
                 frame.setLayout(new FlowLayout());
@@ -234,7 +243,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 tableModel.setRowCount(0);
                 for (int i = 0; i < data.length; i++) {
@@ -336,6 +345,8 @@ public class Client {
                 String word = socket.recieve_message();
                 if (word.equals("OK")) {
                     insert_dialog.setVisible(false);
+                } else {
+                    
                 }
             }
 
@@ -376,8 +387,8 @@ public class Client {
                 return col;
             }
 
-            private String[][] get_data(String word) {
-                return ParsJSON(word);
+            private String[][] get_data(String word, int mode) {
+                return ParsJSON(word, mode);
             }
 
             DrawTickets() {
@@ -385,7 +396,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 frame = new JFrame("Tickets");
                 frame.setLayout(new FlowLayout());
@@ -424,7 +435,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 tableModel.setRowCount(0);
                 for (int i = 0; i < data.length; i++) {
@@ -524,8 +535,8 @@ public class Client {
                 return col;
             }
 
-            private String[][] get_data(String word) {
-                return ParsJSON(word);
+            private String[][] get_data(String word, int mode) {
+                return ParsJSON(word, mode);
             }
 
             DrawReserves() {
@@ -533,7 +544,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 frame = new JFrame("Reserves");
                 frame.setLayout(new FlowLayout());
@@ -570,7 +581,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 tableModel.setRowCount(0);
                 for (int i = 0; i < data.length; i++) {
@@ -648,21 +659,28 @@ public class Client {
         }
 
         //Action after push button Books
-        private class DrawBooks implements ActionListener {
+        private class DrawBooks implements ActionListener  {
             private final JFrame            frame;
             private final JPanel            panel;
             private final JTable            table;
             private final JTableHeader      header;
             private final JButton           refresh_book;
+            private final JButton           insert_book;
             private final DefaultTableModel tableModel;
+
+            private JDialog                 insert_dialog;
+            private JTextField              text_name;
+            private JTextField              text_pub_year;
+            private JComboBox               box_authors;
+            private JComboBox               box_publishers;
 
             private String[] get_col() {
                 String[] col = {"Id", "Name", "Author", "Publisher", "Pub_year"};
                 return col;
             }
 
-            private String[][] get_data(String word) {
-                return ParsJSON(word);
+            private String[][] get_data(String word, int mode) {
+                return ParsJSON(word, mode);
             }
 
             DrawBooks() {
@@ -670,7 +688,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 frame = new JFrame("Books");
                 frame.setLayout(new FlowLayout());
@@ -681,6 +699,8 @@ public class Client {
 
                 refresh_book = new JButton("refresh");
                 refresh_book.addActionListener(this);
+                insert_book = new JButton("insert");
+                insert_book.addActionListener(this);
 
                 header.setBackground(Color.yellow);
                 JScrollPane pane = new JScrollPane(table);
@@ -688,6 +708,7 @@ public class Client {
                 panel.add(pane);
                 frame.add(panel);
                 frame.add(refresh_book);
+                frame.add(insert_book);
 
                 table.getColumnModel().getColumn(0).setWidth(20);
                 table.getColumnModel().getColumn(1).setWidth(100);
@@ -706,7 +727,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 tableModel.setRowCount(0);
                 for (int i = 0; i < data.length; i++) {
@@ -715,9 +736,68 @@ public class Client {
                 tableModel.fireTableDataChanged();
             }
 
+            private void insert_form() {
+                insert_dialog = new JDialog(frame);
+                insert_dialog.setSize(280, 280);
+                JPanel p = new JPanel();
+                JLabel name_label = new JLabel("Введите название книги:");
+                JLabel author_label = new JLabel("Автор:");
+                JLabel publisher_label = new JLabel("Издатель:");
+                JLabel pub_year_label = new JLabel("Год издания:");
+                text_name = new JTextField(20);
+                text_pub_year = new JTextField(20);
+                JButton enter = new JButton("ok");
+                enter.setActionCommand("insert_ok");
+                enter.addActionListener(this);
+                insert_dialog.setAlwaysOnTop(true);
+
+                socket.send_message("GetAuthors");
+                String word = socket.recieve_message();
+                String[][] data = get_data(word, 1);
+
+                box_authors = new JComboBox(data[1]);
+
+                socket.send_message("GetPublishers");
+                word = socket.recieve_message();
+                data = get_data(word, 1);
+
+                box_publishers = new JComboBox(data[1]);
+
+                p.add(name_label);
+                p.add(text_name);
+                p.add(author_label);
+                p.add(box_authors);
+                p.add(publisher_label);
+                p.add(box_publishers);
+                p.add(pub_year_label);
+                p.add(text_pub_year);
+                p.add(enter);
+                insert_dialog.add(p);
+                insert_dialog.setVisible(true);
+            }
+
+            private void insert_book() {
+                String name = text_name.getText();
+                String author = box_authors.getSelectedItem().toString();
+                String publisher = box_publishers.getSelectedItem().toString();
+                String pub_year = text_pub_year.getText();
+                socket.send_message("InsertBooks_" + name + "_" + author + "_" + publisher + "_" + pub_year);
+                text_name.setText("");
+                text_pub_year.setText("");
+                String word = socket.recieve_message();
+                if (word.equals("OK")) {
+                    insert_dialog.setVisible(false);
+                } else {
+
+                }
+            }
             public void actionPerformed(ActionEvent ae) {
                 if(ae.getActionCommand().equals("refresh")) {
                     refresh_book();
+                } else if (ae.getActionCommand().equals("insert")) {
+                    insert_form();
+                } else if(ae.getActionCommand().equals("insert_ok")) {
+                    insert_book();
                 }
             }
         }
@@ -729,22 +809,28 @@ public class Client {
             private final JTable            table;
             private final JTableHeader      header;
             private final JButton           refresh_author;
+            private final JButton           insert_author;
             private final DefaultTableModel tableModel;
 
+            private JDialog                 insert_dialog;
+            private JTextField              text_fio;
+            private JTextField              text_date_birth;
+            private JTextField              text_country_birth;
+
             private String[] get_col() {
-                String[] col = {"Id", "FIO"};
+                String[] col = {"Id", "FIO", "date_birth", "country_birth"};
                 return col;
             }
 
-            private String[][] get_data(String word) {
-                return ParsJSON(word);
+            private String[][] get_data(String word, int mode) {
+                return ParsJSON(word, mode);
             }
             DrawAuthors() {
                 socket.send_message("DrawAuthors");
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 frame = new JFrame("Authors");
                 frame.setLayout(new FlowLayout());
@@ -755,6 +841,8 @@ public class Client {
 
                 refresh_author = new JButton("refresh");
                 refresh_author.addActionListener(this);
+                insert_author = new JButton("insert");
+                insert_author.addActionListener(this);
 
                 header.setBackground(Color.yellow);
                 JScrollPane pane = new JScrollPane(table);
@@ -762,9 +850,12 @@ public class Client {
                 panel.add(pane);
                 frame.add(panel);
                 frame.add(refresh_author);
+                frame.add(insert_author);
 
                 table.getColumnModel().getColumn(0).setWidth(20);
                 table.getColumnModel().getColumn(1).setWidth(100);
+                table.getColumnModel().getColumn(2).setWidth(100);
+                table.getColumnModel().getColumn(3).setWidth(100);
 
                 frame.setSize(500, 500);
                 frame.setUndecorated(true);
@@ -777,7 +868,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 tableModel.setRowCount(0);
                 for (int i = 0; i < data.length; i++) {
@@ -786,9 +877,54 @@ public class Client {
                 tableModel.fireTableDataChanged();
             }
 
+            private void insert_form() {
+                insert_dialog = new JDialog(frame);
+                insert_dialog.setSize(250, 250);
+                JPanel p = new JPanel();
+                JLabel fio_label = new JLabel("Введите фио писателя:");
+                JLabel birth_date_label = new JLabel("Введите дату рождения писателя:");
+                JLabel birth_country_label = new JLabel("Введите страну рождения писателя:");
+                text_fio = new JTextField(20);
+                text_date_birth = new JTextField(20);
+                text_country_birth = new JTextField(20);
+                JButton enter = new JButton("ok");
+                enter.setActionCommand("insert_ok");
+                enter.addActionListener(this);
+                insert_dialog.setAlwaysOnTop(true);
+                p.add(fio_label);
+                p.add(text_fio);
+                p.add(birth_date_label);
+                p.add(text_date_birth);
+                p.add(birth_country_label);
+                p.add(text_country_birth);
+                p.add(enter);
+                insert_dialog.add(p);
+                insert_dialog.setVisible(true);
+            }
+
+            private void insert_author() {
+                String fio = text_fio.getText();
+                String birth_date = text_date_birth.getText();
+                String birth_country = text_country_birth.getText();
+                socket.send_message("InsertAuthors_" + fio + "_" + birth_date + "_" + birth_country);
+                text_fio.setText("");
+                text_date_birth.setText("");
+                text_country_birth.setText("");
+                String word = socket.recieve_message();
+                if (word.equals("OK")) {
+                    insert_dialog.setVisible(false);
+                } else {
+
+                }
+            }
+
             public void actionPerformed(ActionEvent ae) {
                 if(ae.getActionCommand().equals("refresh")) {
                     refresh_author();
+                } else if (ae.getActionCommand().equals("insert")) {
+                    insert_form();
+                } else if(ae.getActionCommand().equals("insert_ok")) {
+                    insert_author();
                 }
             }
         }
@@ -800,15 +936,20 @@ public class Client {
             private final JTable            table;
             private final JTableHeader      header;
             private final JButton           refresh_pub;
+            private final JButton           insert_pub;
             private final DefaultTableModel tableModel;
+
+            private JDialog                 insert_dialog;
+            private JTextField              text_name;
+            private JTextField              text_address;
 
             private String[] get_col() {
                 String[] col = {"Id", "Name", "Address"};
                 return col;
             }
 
-            private String[][] get_data(String word) {
-                return ParsJSON(word);
+            private String[][] get_data(String word, int mode) {
+                return ParsJSON(word, mode);
             }
 
             DrawPublishers() {
@@ -816,7 +957,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 frame = new JFrame("Publishers");
                 frame.setLayout(new FlowLayout());
@@ -827,6 +968,8 @@ public class Client {
 
                 refresh_pub = new JButton("refresh");
                 refresh_pub.addActionListener(this);
+                insert_pub = new JButton("insert");
+                insert_pub.addActionListener(this);
 
                 header.setBackground(Color.yellow);
                 JScrollPane pane = new JScrollPane(table);
@@ -834,9 +977,11 @@ public class Client {
                 panel.add(pane);
                 frame.add(panel);
                 frame.add(refresh_pub);
+                frame.add(insert_pub);
 
                 table.getColumnModel().getColumn(0).setWidth(20);
                 table.getColumnModel().getColumn(1).setWidth(100);
+                table.getColumnModel().getColumn(2).setWidth(100);
 
                 frame.setSize(500, 500);
                 frame.setUndecorated(true);
@@ -849,7 +994,7 @@ public class Client {
                 String word = socket.recieve_message();
 
                 String[] col = get_col();
-                String[][] data = get_data(word);
+                String[][] data = get_data(word, 0);
 
                 tableModel.setRowCount(0);
                 for (int i = 0; i < data.length; i++) {
@@ -858,9 +1003,48 @@ public class Client {
                 tableModel.fireTableDataChanged();
             }
 
+            private void insert_form() {
+                insert_dialog = new JDialog(frame);
+                insert_dialog.setSize(250, 250);
+                JPanel p = new JPanel();
+                JLabel name_label = new JLabel("Введите название издателя:");
+                JLabel address_label = new JLabel("Введите адрес издателя:");
+                text_name = new JTextField(20);
+                text_address = new JTextField(20);
+                JButton enter = new JButton("ok");
+                enter.setActionCommand("insert_ok");
+                enter.addActionListener(this);
+                insert_dialog.setAlwaysOnTop(true);
+                p.add(name_label);
+                p.add(text_name);
+                p.add(address_label);
+                p.add(text_address);
+                p.add(enter);
+                insert_dialog.add(p);
+                insert_dialog.setVisible(true);
+            }
+
+            private void insert_pub() {
+                String fio = text_name.getText();
+                String birth_date = text_address.getText();
+                socket.send_message("InsertPublishers_" + fio + "_" + birth_date);
+                text_name.setText("");
+                text_address.setText("");
+                String word = socket.recieve_message();
+                if (word.equals("OK")) {
+                    insert_dialog.setVisible(false);
+                } else {
+
+                }
+            }
+
             public void actionPerformed(ActionEvent ae) {
                 if(ae.getActionCommand().equals("refresh")) {
                     refresh_pub();
+                } else if (ae.getActionCommand().equals("insert")) {
+                    insert_form();
+                } else if(ae.getActionCommand().equals("insert_ok")) {
+                    insert_pub();
                 }
             }
         }

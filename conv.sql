@@ -5,7 +5,9 @@ USE LIB;
 
 CREATE TABLE Authors (
 	id INT PRIMARY KEY AUTO_INCREMENT,
-    fio VARCHAR(255) UNIQUE NOT NULL
+    fio VARCHAR(255) UNIQUE NOT NULL,
+    date_birth DATE NOT NULL,
+    country_birth VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE Publishers (
@@ -54,7 +56,14 @@ CREATE TABLE Reserves (
     FOREIGN KEY(ticket) REFERENCES Tickets(id),
     FOREIGN KEY(book) REFERENCES Books(id)
 );
-INSERT INTO Authors (fio) values ('John Ronald Reuel Tolkien'), ('Joanne Rowling'), ('Stephen Edwin King'), ('Александр Сергеевич Пушкин'), ('Лев Николаевич Толстой'), ('Фёдор Михайлович Достоевский');
+
+INSERT INTO Authors (fio, date_birth, country_birth) values 
+('John Ronald Reuel Tolkien', '1892-01-03', 'UK'), 
+('Joanne Rowling', '1953-07-31', 'UK'), 
+('Stephen Edwin King', '1974-09-21', 'USA'), 
+('Александр Сергеевич Пушкин', '1799-06-06', 'Russian empire'), 
+('Лев Николаевич Толстой', '1828-09-09', 'Russian empire'), 
+('Фёдор Михайлович Достоевский', '1821-11-11', 'Russian empire');
 
 INSERT INTO Publishers (name, address) values 
 		('Эксмо — АСТ', '123308, город Москва, ул. Зорге, д. 1 стр. 1, этаж 20 каб 2013'),
