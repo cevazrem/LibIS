@@ -320,6 +320,20 @@ public class Server {
                     stmt.executeUpdate("INSERT INTO " + table + " (fio, date_birth, date_reg, date_end, phone) values " +
                             "('" + fio + "', '" + birth + "', SYSDATE(), null, '" + phone + "')");
 
+                } else if (table.equals("Tickets")) {
+                    String fio = data;
+
+                    String client_id = null;
+                    rs = stmt.executeQuery("SELECT id FROM Clients WHERE fio = '" + fio + "'");
+                    while (rs.next()) {
+                        client_id = rs.getString(1);
+                    }
+                    clear_res();
+
+                    System.out.println("INSERT INTO " + table + " (client, date_start, date_end) values " +
+                            "('" + client_id + "', SYSDATE() , null)");
+                    stmt.executeUpdate("INSERT INTO " + table + " (client, date_start, date_end) values " +
+                            "('" + client_id + "', SYSDATE() , null)");
                 } else if (table.equals("Authors")) {
                     String fio = data.substring(0, data.indexOf("_"));
                     data = data.substring(data.indexOf("_") + 1);
@@ -360,6 +374,21 @@ public class Server {
                             "('" + name + "', '" + author_id + "', '" + publisher_id + "', '" + pub_year + "')");
                     stmt.executeUpdate("INSERT INTO " + table + " (name, author, publisher, pub_year) values " +
                             "('" + name + "', '" + author_id + "', '" + publisher_id + "', '" + pub_year + "')");
+                } else if (table.equals("Reserves")) {
+                    String ticket = data.substring(0, data.indexOf("_"));
+                    String book = data.substring(data.indexOf("_") + 1);
+
+                    String book_id = null;
+
+                    rs = stmt.executeQuery("SELECT id FROM Books WHERE name = '" + book + "'");
+                    while (rs.next()) {
+                        book_id = rs.getString(1);
+                    }
+                    clear_res();
+                    System.out.println("INSERT INTO " + table + " (ticket, book) values " +
+                            "('" + ticket + "', '" + book_id + "')");
+                    stmt.executeUpdate("INSERT INTO " + table + " (ticket, book) values " +
+                            "('" + ticket + "', '" + book_id + "')");
                 }
             } catch (SQLException se) {
                 System.err.println(se);
@@ -414,6 +443,97 @@ public class Server {
 
                 clear_res();
                 rs = stmt.executeQuery("SELECT id, name from Publishers");
+                while (rs.next()) {
+                    int id = rs.getInt(1);
+                    String name = rs.getString(2);
+
+                    result[cnt][0] = Integer.toString(id);
+                    result[cnt][1] = name;
+
+                    cnt++;
+                }
+                return result;
+            } catch (SQLException se) {
+                System.err.println(se);
+            }
+            return null;
+        }
+
+        public String[][] get_clients() {
+            int size = 1;
+            int cnt = 1;
+            try {
+                rs = stmt.executeQuery("SELECT count(id) FROM Clients");
+                while (rs.next()) {
+                    size = rs.getInt(1);
+                }
+                String[][] result = new String[size + 1][2];
+                result[0][0] = "id";
+                result[0][1] = "fio";
+
+                clear_res();
+                rs = stmt.executeQuery("SELECT id, fio from Clients");
+                while (rs.next()) {
+                    int id = rs.getInt(1);
+                    String fio = rs.getString(2);
+
+                    result[cnt][0] = Integer.toString(id);
+                    result[cnt][1] = fio;
+
+                    cnt++;
+                }
+                return result;
+            } catch (SQLException se) {
+                System.err.println(se);
+            }
+            return null;
+        }
+
+        public String[][] get_books() {
+            int size = 1;
+            int cnt = 1;
+            try {
+                rs = stmt.executeQuery("SELECT count(id) FROM Books");
+                while (rs.next()) {
+                    size = rs.getInt(1);
+                }
+                String[][] result = new String[size + 1][2];
+                result[0][0] = "id";
+                result[0][1] = "name";
+
+                clear_res();
+                rs = stmt.executeQuery("SELECT id, name from Books");
+                while (rs.next()) {
+                    int id = rs.getInt(1);
+                    String name = rs.getString(2);
+
+                    result[cnt][0] = Integer.toString(id);
+                    result[cnt][1] = name;
+
+                    cnt++;
+                }
+                return result;
+            } catch (SQLException se) {
+                System.err.println(se);
+            }
+            return null;
+        }
+
+        public String[][] get_tickets() {
+            int size = 1;
+            int cnt = 1;
+            try {
+                rs = stmt.executeQuery("SELECT count(id) FROM Tickets");
+                while (rs.next()) {
+                    size = rs.getInt(1);
+                }
+                String[][] result = new String[size + 1][2];
+                result[0][0] = "id";
+                result[0][1] = "name";
+
+                clear_res();
+                rs = stmt.executeQuery("select tk.id, concat(cl.fio, '_', tk.id) from Tickets tk\n" +
+                        "join Clients cl on cl.id = tk.client");
                 while (rs.next()) {
                     int id = rs.getInt(1);
                     String name = rs.getString(2);
@@ -582,6 +702,18 @@ public class Server {
                     data = sql.get_publishers();
                     message = create_JSON(data);
                     socket.send_message(message);
+                } else if (word.equals("GetClients")) {
+                    data = sql.get_clients();
+                    message = create_JSON(data);
+                    socket.send_message(message);
+                } else if (word.equals("GetBooks")) {
+                    data = sql.get_books();
+                    message = create_JSON(data);
+                    socket.send_message(message);
+                } else if (word.equals("GetTickets")) {
+                    data = sql.get_tickets();
+                    message = create_JSON(data);
+                    socket.send_message(message);
                 } else if (word.substring(0, word.indexOf("_")).equals("CloseTicket")) {
                     message = sql.close_execute("Tickets", Integer.parseInt(word.substring(word.indexOf("_") + 1)));
                     socket.send_message(message);
@@ -594,6 +726,9 @@ public class Server {
                 } else if (word.substring(0, word.indexOf("_")).equals("InsertClients")) {
                     message = sql.insert_execute("Clients", word.substring(word.indexOf("_") + 1));
                     socket.send_message(message);
+                } else if (word.substring(0, word.indexOf("_")).equals("InsertTickets")) {
+                    message = sql.insert_execute("Tickets", word.substring(word.indexOf("_") + 1));
+                    socket.send_message(message);
                 } else if (word.substring(0, word.indexOf("_")).equals("InsertAuthors")) {
                     message = sql.insert_execute("Authors", word.substring(word.indexOf("_") + 1));
                     socket.send_message(message);
@@ -602,6 +737,9 @@ public class Server {
                     socket.send_message(message);
                 } else if (word.substring(0, word.indexOf("_")).equals("InsertBooks")) {
                     message = sql.insert_execute("Books", word.substring(word.indexOf("_") + 1));
+                    socket.send_message(message);
+                } else if (word.substring(0, word.indexOf("_")).equals("InsertReserves")) {
+                    message = sql.insert_execute("Reserves", word.substring(word.indexOf("_") + 1));
                     socket.send_message(message);
                 }
                 //todo another operations(delete/add/view)

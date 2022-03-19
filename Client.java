@@ -71,6 +71,11 @@ public class Client {
         private final JTableHeader      header;
         private final DefaultTableModel tableModel;
 
+        private String[] get_col() {
+            String[] col = {"Client_fio", "date_start", "Book_name", "Author_fio"};
+            return col;
+        }
+
         TFDemo() {
             //constructor for start form
             jfrm = new JFrame("LibIS");
@@ -86,6 +91,9 @@ public class Client {
             JButton jbtntest5 = new JButton("authors");
             JButton jbtntest6 = new JButton("publishers");
 
+            JButton refresh_cl = new JButton("refresh");
+            refresh_cl.addActionListener(this);
+
 
             jbtntest1.addActionListener(this);
             jbtntest2.addActionListener(this);
@@ -93,11 +101,12 @@ public class Client {
             jbtntest4.addActionListener(this);
             jbtntest5.addActionListener(this);
             jbtntest6.addActionListener(this);
+            refresh_cl.addActionListener(this);
 
             socket.send_message("DrawAll");
             String word = socket.recieve_message();
             panel = new JPanel();
-            String[] col = {"Client_fio", "date_start", "Book_name", "Author_fio"};
+            String[] col = get_col();
             tableModel = new DefaultTableModel(ParsJSON(word, 0), col);
             table = new JTable(tableModel);
 
@@ -114,6 +123,8 @@ public class Client {
             jbtntest5.setBounds(width / 16 - 75, height * 3 / 4 - 25, 150, 50);
             jbtntest6.setBounds(width * 3 / 16 - 75,height * 3/ 4 - 25, 150, 50);
 
+            refresh_cl.setBounds(width * 7 / 8 - 75, height / 4 - 25, 150, 50);
+
             pane.setPreferredSize(new Dimension(width/2, height*9/10));
             //add buttons to window
             jfrm.add(jbtntest1);
@@ -123,10 +134,26 @@ public class Client {
             jfrm.add(jbtntest5);
             jfrm.add(jbtntest6);
 
+            jfrm.add(refresh_cl);
+
             panel.add(pane);
             jfrm.add(panel);
 
             jfrm.setVisible(true);
+        }
+
+        private void refresh_all() {
+            socket.send_message("RefreshAll");
+            String word = socket.recieve_message();
+
+            String[] col = get_col();
+            String[][] data = ParsJSON(word, 0);
+
+            tableModel.setRowCount(0);
+            for (int i = 0; i < data.length; i++) {
+                tableModel.addRow(data[i]);
+            }
+            tableModel.fireTableDataChanged();
         }
 
         //JSON parser
@@ -374,13 +401,14 @@ public class Client {
             private final JTableHeader      header;
             private final JButton           refresh_tick;
             private final JButton           delete_tick;
-//            private final JButton           insert_tick;
+            private final JButton           insert_tick;
             private final DefaultTableModel tableModel;
             private JDialog                 dialog;
             private JTextField              text;
- //           private JTextField              text_id;
- //           private JTextField              text_date_start;
-//            private JTextField              text_date_end;
+
+            private JDialog                 insert_dialog;
+            private JComboBox               box_clients;
+
             private JLabel                  label;
             private String[] get_col() {
                 String[] col = {"Id", "Client", "Date_Start", "Date_end"};
@@ -409,8 +437,8 @@ public class Client {
                 refresh_tick.addActionListener(this);
                 delete_tick = new JButton("close");
                 delete_tick.addActionListener(this);
-//                insert_tick = new JButton("insert");
-//                insert_tick.addActionListener(this);
+                insert_tick = new JButton("insert");
+                insert_tick.addActionListener(this);
                 header.setBackground(Color.yellow);
                 JScrollPane pane = new JScrollPane(table);
                 table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
@@ -418,7 +446,7 @@ public class Client {
                 frame.add(panel);
                 frame.add(refresh_tick);
                 frame.add(delete_tick);
-//                frame.add(insert_tick);
+                frame.add(insert_tick);
 
                 table.getColumnModel().getColumn(0).setWidth(20);
                 table.getColumnModel().getColumn(1).setWidth(20);
@@ -501,6 +529,40 @@ public class Client {
                 }
             }
 
+            private void insert_form() {
+                insert_dialog = new JDialog(frame);
+                insert_dialog.setSize(250, 150);
+                JPanel p = new JPanel();
+                JLabel name_label = new JLabel("Введите клиента:");
+                JButton enter = new JButton("ok");
+                enter.setActionCommand("insert_ok");
+                enter.addActionListener(this);
+                insert_dialog.setAlwaysOnTop(true);
+
+                socket.send_message("GetClients");
+                String word = socket.recieve_message();
+                String[][] data = get_data(word, 1);
+
+                box_clients = new JComboBox(data[1]);
+
+                p.add(name_label);
+                p.add(box_clients);
+                p.add(enter);
+                insert_dialog.add(p);
+                insert_dialog.setVisible(true);
+            }
+
+            private void insert_ticket() {
+                String client = box_clients.getSelectedItem().toString();
+                socket.send_message("InsertTickets_" + client);
+                String word = socket.recieve_message();
+                if (word.equals("OK")) {
+                    insert_dialog.setVisible(false);
+                } else {
+
+                }
+            }
+
             public void actionPerformed(ActionEvent ae) {
                 System.out.println(ae.getActionCommand());
                 if(ae.getActionCommand().equals("refresh")) {
@@ -509,11 +571,11 @@ public class Client {
                     close_ticket_form();
                 } else if(ae.getActionCommand().equals("close_ok")) {
                     close_ticket();
-/*                } else if(ae.getActionCommand().equals("insert")) {
+                } else if(ae.getActionCommand().equals("insert")) {
                     insert_form();
                 } else if(ae.getActionCommand().equals("insert_ok")) {
                     insert_ticket();
- */               }
+                }
             }
         }
 
@@ -525,10 +587,15 @@ public class Client {
             private final JTableHeader      header;
             private final JButton           refresh_res;
             private final JButton           delete_res;
+            private final JButton           insert_res;
             private final DefaultTableModel tableModel;
             private JDialog                 dialog;
             private JTextField              text;
             private JLabel                  label;
+
+            private JDialog                 insert_dialog;
+            private JComboBox               box_tickets;
+            private JComboBox               box_books;
 
             private String[] get_col() {
                 String[] col = {"Id", "Ticket", "Book"};
@@ -557,6 +624,8 @@ public class Client {
                 refresh_res.addActionListener(this);
                 delete_res = new JButton("close");
                 delete_res.addActionListener(this);
+                insert_res = new JButton("insert");
+                insert_res.addActionListener(this);
 
                 header.setBackground(Color.yellow);
                 JScrollPane pane = new JScrollPane(table);
@@ -565,6 +634,7 @@ public class Client {
                 frame.add(panel);
                 frame.add(refresh_res);
                 frame.add(delete_res);
+                frame.add(insert_res);
 
                 table.getColumnModel().getColumn(0).setWidth(20);
                 table.getColumnModel().getColumn(1).setWidth(50);
@@ -647,6 +717,52 @@ public class Client {
                     }
                 }
             }
+
+            private void insert_form() {
+                insert_dialog = new JDialog(frame);
+                insert_dialog.setSize(300, 200);
+                JPanel p = new JPanel();
+                JLabel ticket_label = new JLabel("Выберите читательский билет");
+                JLabel book_label = new JLabel("Введите книгу:");
+                JButton enter = new JButton("ok");
+                enter.setActionCommand("insert_ok");
+                enter.addActionListener(this);
+                insert_dialog.setAlwaysOnTop(true);
+
+                socket.send_message("GetTickets");
+                String word = socket.recieve_message();
+                String[][] data = get_data(word, 1);
+
+                box_tickets = new JComboBox(data[1]);
+
+                socket.send_message("GetBooks");
+                word = socket.recieve_message();
+                data = get_data(word, 1);
+
+                box_books = new JComboBox(data[1]);
+
+                p.add(ticket_label);
+                p.add(box_tickets);
+                p.add(book_label);
+                p.add(box_books);
+                p.add(enter);
+                insert_dialog.add(p);
+                insert_dialog.setVisible(true);
+            }
+
+            private void insert_reserve() {
+                String ticket = box_tickets.getSelectedItem().toString();
+                String book = box_books.getSelectedItem().toString();
+                ticket = ticket.substring(ticket.indexOf("_") + 1);
+                socket.send_message("InsertReserves_" + ticket + "_" + book);
+                String word = socket.recieve_message();
+                if (word.equals("OK")) {
+                    insert_dialog.setVisible(false);
+                } else {
+
+                }
+            }
+
             public void actionPerformed(ActionEvent ae) {
                 if(ae.getActionCommand().equals("refresh")) {
                     refresh_reserve();
@@ -654,6 +770,10 @@ public class Client {
                     close_reserve_form();
                 } else if(ae.getActionCommand().equals("close_ok")) {
                     close_reserve();
+                } else if(ae.getActionCommand().equals("insert")) {
+                    insert_form();
+                } else if(ae.getActionCommand().equals("insert_ok")) {
+                    insert_reserve();
                 }
             }
         }
@@ -1064,6 +1184,8 @@ public class Client {
                 DrawAuthors exec_auth = new DrawAuthors();
             } else if (ae.getActionCommand().equals("publishers")) {
                 DrawPublishers exec_pub = new DrawPublishers();
+            } if(ae.getActionCommand().equals("refresh")) {
+                refresh_all();
             }
         }
     }
